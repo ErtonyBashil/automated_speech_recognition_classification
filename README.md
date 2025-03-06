@@ -6,7 +6,7 @@
 
 This project is conducted as part of the Natural Language Processing (NLP) course at the Dakar Institute of Technology. The objective is to perform sentiment analysis on audio data using Automatic Speech Recognition (ASR). The proposed approach first processes spoken language through ASR to generate textual transcriptions. Sentiment analysis is then applied to the transcribed text to determine the emotional tone of the speech. This study aims to enhance the understanding of dialects, accents, and contextual variations, ensuring accurate transcription even in challenging acoustic environments. The findings contribute to improving speech-based sentiment analysis, particularly in diverse linguistic settings.
 
-**Introduction**
+## Introduction
 
 Automatic Speech Recognition (ASR) applications have increased greatly during the last decade due to the  emergence of new devices and home automation hardware that can benefit greatly from allowing users to interact hands free, such as smart watches, earbuds, portable translators, and home assistants.
 
@@ -15,7 +15,7 @@ Developers across many industries now use automatic speech recognition (ASR) to 
 ![speech recognition](images/fig_1.png)
 **Automatic Speech Recognition (ASR)** involves converting spoken language into written text. It is designed to transcribe spoken words into text in real-time, allowing people to communicate with computers, mobile devices, and other technology using their voice.
 
-#### Use Cases for automatic speech transcription
+## Use Cases for automatic speech transcription
 
 * A person with English as a second language
 
@@ -29,10 +29,12 @@ A content creator of publicly available web content, needs transcript of audio c
 
 As a researcher, I need a rough transcript of interviews so that I can save time producing final transcripts. ASR can save time, but the results still need to be edited by a human.
 
-#### Model
+## Model
 
 
-**Model_1:** Facebook: Wav2Vec2-Large-XLSR-53-French (facebook/wav2vec2-large-xlsr-53-french) Wav2Vec 2.0 is a self-supervised learning model developed by Facebook AI (now Meta AI) for automatic speech recognition (ASR). The facebook/wav2vec2-large-xlsr-53-french model is a fine-tuned version of Wav2Vec2, specifically trained for French speech recognition.
+**1. Wav2Vec2** 
+
+Facebook: Wav2Vec2-Large-XLSR-53-French (facebook/wav2vec2-large-xlsr-53-french) Wav2Vec 2.0 is a self-supervised learning model developed by Facebook AI (now Meta AI) for automatic speech recognition (ASR). The facebook/wav2vec2-large-xlsr-53-french model is a fine-tuned version of Wav2Vec2, specifically trained for French speech recognition.
 
 The Wav2Vec 2.0 architecture is based on a transformer encoder and a CNN feature extractor: The model was fine-tuned on labeled French speech datasets. The large Model has 317 million parameters, 24 transformer layers and 16 attention heads. The base XLSR-53 model was pretrained on Multilingual Speech Data from 53 languages using 2.4 million hours of unlabeled audio. Trained on 53 languages, allowing transfer learning for low-resource languages.
 
@@ -42,7 +44,8 @@ The Wav2Vec 2.0 architecture is based on a transformer encoder and a CNN feature
 - Robust to Noisy Data: Performs well in real-world noisy environments.
 - Efficient Fine-Tuning: Requires less labeled data compared to traditional ASR models.
 
-**Model_2:** WHisper : is a pre-trained model for automatic speech recognition (ASR) published in September 2022 by the authors Alec Radford et al. from OpenAI. Unlike many of its predecessors, such as Wav2Vec 2.0, which are pre-trained on un-labelled audio data, Whisper is pre-trained on a vast quantity of labelled audio-transcription data, 680,000 hours to be precise
+**2. WHisper:**
+ WHisper : is a pre-trained model for automatic speech recognition (ASR) published in September 2022 by the authors Alec Radford et al. from OpenAI. Unlike many of its predecessors, such as Wav2Vec 2.0, which are pre-trained on un-labelled audio data, Whisper is pre-trained on a vast quantity of labelled audio-transcription data, 680,000 hours to be precise
 
 Whisper is designed for transcription, translation, and language identification, making it one of the most accurate and versatile ASR models available. Whisper learns directly from raw audio, making it more robust to noise, accents, and multilingual input.
 advantages::::::::
@@ -53,8 +56,6 @@ advantages::::::::
 - No Need for Language-Specific Models: One model handles all languages.
 
 💡 Whisper is best for general use & multilingual ASR. Wav2Vec2 is better for fine-tuned, specific-language ASR.
-
-
 
 
 ```python 
@@ -84,7 +85,7 @@ The provided code automates the transcription of audio files using a pre-trained
 3. We used precision, recall, and F1-score from sklearn.metrics to assess the accuracy of keyword recognition. A predefined list of true keywords (reference text) is compared with predicted keywords (the ASR-generated transcription). The **precision** measures the proportion of correctly recognized keywords out of all predicted ones.The **recall** evaluates how many of the actual keywords were correctly detected. **The F1-score** provides a balanced metric between precision and recall. Finally, the computed scores **0.5** for each.
 
 
-### Step 2. Sentiment Analysis using BERT
+## Step 2. Sentiment Analysis using BERT
 
 #### Introduction
 
@@ -137,7 +138,7 @@ class IMDBDataset(Dataset):
         } 
 ```
   
-#### Training
+## Training
 
 **Model: "bert-base-uncased"**
 
@@ -200,7 +201,7 @@ if __name__ == "__main__":
 ![speech recognition](images/training.png)
 
 
-#### Evaluation
+## Evaluation
 
 Model Performance: We tested both models on the same datasets to assessing its accuracy, generalizability,  and robustness
  
@@ -212,7 +213,7 @@ Model Performance: We tested both models on the same datasets to assessing its a
 
 ![speech recognition](images/loss_valid.png)
 
-#### Metric
+## Metric
 
 Measuring Automatic Speech Recognition
 
@@ -222,7 +223,7 @@ Word Error Rate (WER): WER measures the accuracy of ASR by comparing the transcr
 Confidence Scores: Confidence scores indicate the level of certainty of the ASR system in correctly transcribing a particular word or phrase. Higher confidence scores indicate higher accuracy.
 Processing Time: The time taken by the ASR system to transcribe speech can also be measured to assess its efficiency and real-time processing capabilities.
 
-#### Make inference
+## Make inference
  
  1. Pre-process the text: unction you've provided is used to tokenize a given text using the specified tokenizer, ensuring the text is padded or truncated to a specified maximum length, and the output is returned as PyTorch tensors
  
