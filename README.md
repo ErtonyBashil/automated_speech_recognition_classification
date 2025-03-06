@@ -282,7 +282,8 @@ if __name__ == "__main__":
  
  ```
  
- ### Evaluation
+ ![speech recognition](images/final_pred.png)
+ ### Discussion
  
 The ASR pipeline generates text with no punctuation or capitalization. Finally, a punctuation and capitalization model is used to improve the text quality for better readability. Bidirectional Encoder Representations from Transformers (BERT) models are commonly used to generate punctuated text.
  
