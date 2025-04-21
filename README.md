@@ -85,7 +85,28 @@ The provided code automates the transcription of audio files using a pre-trained
 3. We used precision, recall, and F1-score from sklearn.metrics to assess the accuracy of keyword recognition. A predefined list of true keywords (reference text) is compared with predicted keywords (the ASR-generated transcription). The **precision** measures the proportion of correctly recognized keywords out of all predicted ones.The **recall** evaluates how many of the actual keywords were correctly detected. **The F1-score** provides a balanced metric between precision and recall. Finally, the computed scores **0.5** for each.
 
 
-## Step 2. Sentiment Analysis using BERT
+## Step 2. Evaluation of Wolof models on different datasets 
+
+after 
+
+**1. ALWALY/WHISPER-MEDUIM-WOLOF**
+**2. SPEECHBRAIN/WOLOF**
+**3. BILALFAYE/WAV2VEC2-LARGE-MODEL**
+**4. SPEECHBRAIN/WOLOF**
+
+
+2. Robustness and Generalization
+Performance across different accents, dialects, and noise levels
+WER/CER per speaker or demographic group (fairness evaluation)
+Accuracy across varying audio quality (bitrate, compression, background noise, etc.)
+
+
+
+
+
+
+
+## Step 3. Sentiment Analysis using BERT
 
 #### Introduction
 
