@@ -70,7 +70,6 @@ model.eval()
 ```
 **Instead of training from scratch, we use the model in inference mode to transcribe new audio inputs directly** 
 
-
 ![speech recognition](images/transcripted.png)
 
 The provided code automates the transcription of audio files using a pre-trained Wav2Vec2 model. It iterates through a directory containing audio files, loads each file, resamples it to 16 kHz if necessary, and converts it into a format suitable for the model. The processed audio is then passed through the Wav2Vec2 model to generate transcriptions, which are stored in a list and displayed.
@@ -87,23 +86,151 @@ The provided code automates the transcription of audio files using a pre-trained
 
 ## Step 2. Evaluation of Wolof models on different datasets 
 
-after 
+**1. Selected Models**
 
-**1. ALWALY/WHISPER-MEDUIM-WOLOF**
-**2. SPEECHBRAIN/WOLOF**
-**3. BILALFAYE/WAV2VEC2-LARGE-MODEL**
-**4. SPEECHBRAIN/WOLOF**
+We chose differents models from huggingface with best performance metrics among them, we based on the peformance's metrics, last modification,  :
+- ALWALY/WHISPER-MEDUIM-WOLOF
+- SPEECHBRAIN/WOLOF
+- BILALFAYE/WAV2VEC2-LARGE-MODEL
+- SPEECHBRAIN/WOLOF
+
+**2. Datasets** : GalsenIA dataset and different Wolof interviews available in the company.
+
+**3. Evaluation metrics**
+We evaluated: Robustness and Generalization
+- Performance across different accents, dialects, and noise levels
+- WER/CER per speaker or demographic group (fairness evaluation)
+- Accuracy across varying audio quality (bitrate, compression, background noise, etc.)
+- Processing Time: The time taken by the ASR system to transcribe speech can also be measured to assess its efficiency and real-time processing capabilities.
+
+**4. Inference**
+
+- Load the model
+
+```python 
+# Load Whisper model and processor
+model_name = "Alwaly/whisper-medium-wolof"
+processor = AutoProcessor.from_pretrained(model_name)
+model = AutoModelForSpeechSeq2Seq.from_pretrained(model_name).to("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+```
+- Load the recording
+
+We have to break long audio files into manageable chunks for ASR model inference,for faster processing and memory efficiency.
+
+![speech recognition](images/Load_the_recording.png)
+
+This  snippet uses the pydub library to split manually an audio file into smaller chunks of 60sec and save them as individual .wav files.
+We can split the file the audio file into smaller segments based on silence, however the **Diarization** 
+
+**Speaker diarization** is the process of partitioning an audio recording into segments based on the identity of the speaker, essentially answering the question, “who spoke when?” It involves detecting speaker changes and assigning consistent labels to different speakers throughout the audio, even when their identities are unknown.
+
+# Load diarization pipeline (requires Hugging Face token)
+
+```python 
 
 
-2. Robustness and Generalization
-Performance across different accents, dialects, and noise levels
-WER/CER per speaker or demographic group (fairness evaluation)
-Accuracy across varying audio quality (bitrate, compression, background noise, etc.)
+def diarize_and_transcribe_(audio_path, output_prefix="diarized_output"):
+
+    print(f"Processing: {audio_path}")
+
+    # Run diarization
+    diarization_result = diarization(audio_path)
+
+    # Load full waveform
+    waveform, sample_rate = torchaudio.load(audio_path)
+
+    results = []
+
+    for turn, _, speaker in diarization_result.itertracks(yield_label=True):
+        start = int(turn.start * sample_rate)
+        end = int(turn.end * sample_rate)
+        audio_chunk = waveform[:, start:end].squeeze().numpy()
+
+        # Resample if needed
+        if sample_rate != 16000:
+            audio_chunk = torchaudio.functional.resample(
+                torch.tensor(audio_chunk, dtype=torch.float32),
+                orig_freq=sample_rate,
+                new_freq=16000
+            ).numpy()
+
+        # Transcribe with Whisper
+        inputs = processor(audio_chunk, sampling_rate=16000, return_tensors="pt")
+        input_features = inputs.input_features.to(device)
+
+        with torch.no_grad():
+            predicted_ids = whisper_model.generate(input_features)
+
+        transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+
+        results.append({
+            "speaker": speaker,
+            "start": round(turn.start, 2),
+            "end": round(turn.end, 2),
+            "transcription": transcription
+        })
+
+    # Save TXT
+    with open(f"{output_prefix}.txt", "w", encoding="utf-8") as f:
+        for r in results:
+            f.write(f"{r['speaker']} [{r['start']}s - {r['end']}s]: {r['transcription']}\n")
+
+    # Save CSV
+    with open(f"{output_prefix}.csv", "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["speaker", "start", "end", "transcription"])
+        writer.writeheader()
+        writer.writerows(results)
+
+    print(f"Done! Transcriptions saved to {output_prefix}.txt and .csv")
+
+diarize_and_transcribe_("LGW1_segment_0_.wav")
+```
+
+
+![](assets/17452426389531.jpg)
+
+In speaker diarization outputs, it is common to encounter numerous short and fragmented segments, often resulting from background noise, brief pauses, or imperfect speaker change detection. These short segments are not always meaningful or necessary for downstream tasks such as transcription, where continuity and speaker coherence are more important.
 
 
 
+```python
+from pyannote.core import Annotation, Segment
+
+def merge_short_segments(diarization: Annotation, gap_threshold: float = 0.8, min_duration: float = 1.0) -> Annotation:
+    merged = Annotation()
+    prev_segment = None
+    prev_speaker = None
+
+    for segment, _, speaker in diarization.itertracks(yield_label=True):
+        if prev_segment is None:
+            prev_segment = segment
+            prev_speaker = speaker
+            continue
+
+        # Check if current and previous are from the same speaker and close enough
+        gap = segment.start - prev_segment.end
+        if speaker == prev_speaker and gap <= gap_threshold:
+            # Merge segments
+            prev_segment = Segment(prev_segment.start, segment.end)
+        else:
+            # If previous segment is long enough, add it
+            if prev_segment.duration >= min_duration:
+                merged[prev_segment] = prev_speaker
+            prev_segment = segment
+            prev_speaker = speaker
+
+    # Add the last segment
+    if prev_segment and prev_segment.duration >= min_duration:
+        merged[prev_segment] = prev_speaker
+
+    return merged
+```    
 
 
+The provided Python function merge_short_segments is designed to post-process speaker diarization results by merging temporally adjacent speech segments belonging to the same speaker. This method enhances the temporal coherence and interpretability of diarized speech by consolidating speech segments that likely belong to a single continuous utterance. It mitigates over-segmentation issues common in automatic diarization systems, especially in conversational or spontaneous speech where brief pauses do not necessarily indicate speaker changes.
+
+![asr_interface](assets/asr_interface.png)
 
 
 ## Step 3. Sentiment Analysis using BERT
@@ -158,7 +285,6 @@ class IMDBDataset(Dataset):
             "Labels": labels.to(self.device)
         } 
 ```
-  
 ## Training
 
 **Model: "bert-base-uncased"**
